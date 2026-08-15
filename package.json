@@ -1,0 +1,16 @@
+{
+  "name": "dsh-plugin-stack-curator",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "为 DeepSeek Harness 用户按角色/需求推荐插件，并管理个人插件栈。",
+  "exports": {
+    ".": "./index.js"
+  },
+  "dsh": {
+    "bundle": true
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-tools": "*"
+  }
+}
