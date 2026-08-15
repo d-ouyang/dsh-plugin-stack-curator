@@ -40,23 +40,19 @@ export function apply(ctx) {
       parameters: {
         role: {
           type: 'string',
-          required: false,
           description:
             '职业角色预设，取值之一：' + ROLE_KEYS.join(' / ') + '（也接受中文标签，如"教师"）。',
         },
         description: {
           type: 'string',
-          required: false,
           description: '自然语言描述你的工作/需求，用于关键词精排与补充推荐。',
         },
         maxResults: {
           type: 'number',
-          required: false,
           description: '返回的最大插件数（默认 8；浏览全量时可调大，如 50）。',
         },
         minStars: {
           type: 'number',
-          required: false,
           description: '最小星数筛选：只看 GitHub star 数 ≥ 该值的插件（如 50）。不填则不按星数过滤。',
         },
       },
@@ -65,19 +61,20 @@ export function apply(ctx) {
           type: 'object',
           additionalProperties: false,
           properties: {
-            role: { type: ['string', 'null'] },
-            query: { type: ['string', 'null'] },
+            role: { type: 'json' },
+            query: { type: 'json' },
             results: {
               type: 'array',
               items: {
                 type: 'object',
+                additionalProperties: false,
                 properties: {
                   name: { type: 'string' },
                   category: { type: 'string' },
                   url: { type: 'string' },
                   installCmd: { type: 'string' },
                   oneLiner: { type: 'string' },
-                  stars: { type: ['number', 'null'] },
+                  stars: { type: 'json' },
                   why: { type: 'string' },
                 },
               },
@@ -130,18 +127,15 @@ export function apply(ctx) {
         },
         plugins: {
           type: 'array',
-          required: false,
           description: 'add/remove 时的插件 slug 数组，如 ["author/repo"]。',
           items: { type: 'string' },
         },
         confirm: {
           type: 'boolean',
-          required: false,
           description: 'install 时为 true 才真正执行安装（默认 false，只返回命令）。',
         },
         profile: {
           type: 'string',
-          required: false,
           description: 'install 使用的 profile（默认 web）。',
         },
       },
