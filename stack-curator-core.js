@@ -1,10 +1,27 @@
 // stack-curator-core.js — pure, dependency-free domain logic.
 // No imports beyond node:* so it stays unit-testable and reusable.
-import { readFile, writeFile, mkdir } from 'node:fs/promises'
-import { homedir } from 'node:os'
-import { join } from 'node:path'
 
-// ---- 数据解析：把 awesome-dsh-plugin 的 README 解析成结构化插件列表 ----
+import { readFile, writeFile, mkdir } from 'node:fs/promises'
+import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import { PLUGINS as BUNDLED_PLUGINS } from './data/plugins.js'
+
+const HERE = dirname(fileURLToPath(import.meta.url))
+
+// ---- 数据源（来自 awesome-dsh-plugin 项目的真实获取流程）----
+// 真相源 = 各语言 README 的 bullet 条目；维护者跑 probe 脚本抓取 npm/stars/readme
+// 富集后，build-site.mjs 生成「公开注册表 API」/plugins.json（注释明说
+// "Public registry API: /plugins.json — deterministic; consumed by the find plugin"）。
+// 因此本项目优先消费该官方注册表，README 解析仅作离线兜底。
+export const REGISTRY_URL = 'https://awesome-dsh-plugin.com/plugins.json'
+export const README_RAW_URL =
+  'https://raw.githubusercontent.com/awesome-dsh-plugin/awesome-dsh-plugin/main/README.md'
+
+// 刷新后的目录缓存（用户级，不污染插件目录；生产只读 bundle 也能用）
+export const CATALOG_CACHE = join(stackDir(), 'catalog.json')
 
 const CATEGORY_ORDER = [
   'UI Enhancements',
@@ -27,11 +44,13 @@ function splitSlug(slug) {
   return [slug.slice(0, i), slug.slice(i + 1)]
 }
 
-/**
- * Parse the awesome-dsh-plugin README markdown into a flat plugin list.
- * @param {string} md raw markdown
- * @returns {Array<{category,author,repo,name,url,description,installCmd}>}
- */
+/** 个人插件栈目录 ~/.dsh/stack-curator */
+export function stackDir() {
+  return join(homedir(), '.dsh', 'stack-curator')
+}
+
+// ---- 解析：把 README markdown 解析成结构化插件列表（离线兜底用）----
+// 统一约定：name = 短仓库名，repo = "owner/name" 全 slug。
 export function parseReadme(md) {
   const lines = md.split(/\r?\n/)
   const plugins = []
@@ -43,7 +62,6 @@ export function parseReadme(md) {
 
   for (const line of lines) {
     if (headerRe.test(line)) { inPlugins = true; continue }
-    // 遇到下一个二级标题即结束 Plugins 区段
     if (inPlugins && /^##\s+/.test(line) && !headerRe.test(line)) break
     if (!inPlugins) continue
 
@@ -54,29 +72,148 @@ export function parseReadme(md) {
     if (m && category) {
       const slug = m[1].trim()
       const url = m[2].trim()
-      let desc = m[3].trim()
-      // 去掉行尾可能出现的分类标签，如 " - [UI Enhancements]"
-      desc = desc.replace(/\s*-\s*\[[^\]]+\]\s*$/, '').trim()
+      let desc = m[3].trim().replace(/\s*-\s*\[[^\]]+\]\s*$/, '').trim()
       const [author, repo] = splitSlug(slug)
       if (!author || !repo) continue
       plugins.push({
         category,
         author,
-        repo,
-        name: slug,
+        name: repo,
+        repo: slug,
         url,
         description: desc,
+        descriptionZh: '',
+        npm: null,
+        stars: null,
         installCmd: `dsh plugin --profile web add ${url}`,
+        added: null,
       })
     }
   }
   return plugins
 }
 
-/** 从插件列表中按 slug（author/repo 或 repo）查找 */
+/** 把 awesome 官方注册表文档归一化为本项目插件结构 */
+export function normalizeRegistry(doc) {
+  const arr = Array.isArray(doc) ? doc : doc.plugins || []
+  const out = []
+  for (const p of arr) {
+    if (!p || !p.name || !p.owner) continue
+    const owner = p.owner
+    const name = p.name
+    const descObj = p.description && typeof p.description === 'object' ? p.description : null
+    const en = descObj ? descObj.en || descObj.zh || '' : (p.description || '')
+    const zh = descObj ? descObj.zh || descObj.en || '' : ''
+    const full = `${owner}/${name}`
+    out.push({
+      category: p.category || 'uncategorized',
+      author: owner,
+      name,
+      repo: full,
+      url: p.url || `https://github.com/${full}`,
+      page: p.page || null,
+      description: en,
+      descriptionZh: zh,
+      npm: p.npm || null,
+      stars: typeof p.stars === 'number' ? p.stars : null,
+      installCmd:
+        p.install || `dsh plugin --profile web add github:${full}`,
+      added: p.added || null,
+    })
+  }
+  return out
+}
+
+/** 拉取并归一化官方注册表。失败抛错，由上层回退到 README */
+export async function fetchRegistry(timeoutMs = 30000) {
+  const ac = new AbortController()
+  const t = setTimeout(() => ac.abort(), timeoutMs)
+  try {
+    const res = await fetch(REGISTRY_URL, {
+      signal: ac.signal,
+      headers: { Accept: 'application/json' },
+    })
+    if (!res.ok) throw new Error(`registry HTTP ${res.status}`)
+    const doc = await res.json()
+    const list = normalizeRegistry(doc)
+    if (!list.length) throw new Error('registry returned 0 plugins')
+    return list
+  } finally {
+    clearTimeout(t)
+  }
+}
+
+/**
+ * 更新插件目录：优先官方注册表 API，失败回退 raw README。
+ * 结果写入 CATALOG_CACHE（~/.dsh/stack-curator/catalog.json）。
+ * @returns {{source:string,count:number,path:string,updated:string}}
+ */
+export async function updateCatalog({ onStatus } = {}) {
+  let plugins
+  let source
+  try {
+    if (onStatus) onStatus('正在从官方注册表拉取 ' + REGISTRY_URL)
+    plugins = await fetchRegistry()
+    source = 'registry' // awesome-dsh-plugin.com/plugins.json
+  } catch (e) {
+    if (onStatus) onStatus('注册表不可用（' + e.message + '），回退到 raw README')
+    const md = await fetchReadmeRaw()
+    plugins = parseReadme(md)
+    source = 'readme' // raw.githubusercontent README（真相源）
+  }
+  mkdirSync(dirname(CATALOG_CACHE), { recursive: true })
+  const payload = {
+    source,
+    updated: new Date().toISOString(),
+    count: plugins.length,
+    plugins,
+  }
+  writeFileSync(CATALOG_CACHE, JSON.stringify(payload, null, 2))
+  if (onStatus) onStatus(`已更新目录：${plugins.length} 个插件（来源 ${source}）`)
+  return { source, count: plugins.length, path: CATALOG_CACHE, updated: payload.updated }
+}
+
+async function fetchReadmeRaw(timeoutMs = 30000) {
+  const ac = new AbortController()
+  const t = setTimeout(() => ac.abort(), timeoutMs)
+  try {
+    const res = await fetch(README_RAW_URL, { signal: ac.signal })
+    if (!res.ok) throw new Error(`README HTTP ${res.status}`)
+    return await res.text()
+  } finally {
+    clearTimeout(t)
+  }
+}
+
+/**
+ * 读取当前生效的插件目录：优先 CATALOG_CACHE（update_catalog 刷新结果），
+ * 否则回退到内置快照 data/plugins.js。
+ */
+export function loadPlugins() {
+  try {
+    if (existsSync(CATALOG_CACHE)) {
+      const doc = JSON.parse(readFileSync(CATALOG_CACHE, 'utf8'))
+      if (Array.isArray(doc.plugins) && doc.plugins.length) return doc.plugins
+    }
+  } catch {
+    /* ignore corrupt cache */
+  }
+  return BUNDLED_PLUGINS
+}
+
+/** 各分类计数（按数量降序） */
+export function listCategories(plugins = loadPlugins()) {
+  const m = new Map()
+  for (const p of plugins) m.set(p.category, (m.get(p.category) || 0) + 1)
+  return [...m.entries()]
+    .map(([category, count]) => ({ category, count }))
+    .sort((a, b) => b.count - a.count)
+}
+
+/** 从插件列表中按 slug（author/repo 或 repo 短名）查找 */
 export function findPlugin(plugins, slug) {
   return plugins.find(
-    (p) => p.name === slug || `${p.author}/${p.repo}` === slug || p.repo === slug,
+    (p) => p.name === slug || p.repo === slug || `${p.author}/${p.name}` === slug,
   )
 }
 
@@ -160,10 +297,16 @@ export function expandTokens(tokens) {
 
 export function scorePlugin(p, tokens) {
   if (!tokens.length) return 0
-  const hay = `${p.description} ${p.category} ${p.name} ${p.repo}`.toLowerCase()
+  // 同时匹配英文描述与中文描述，提升中文用户命中率
+  const hay = `${p.description} ${p.descriptionZh || ''} ${p.category} ${p.name} ${p.repo}`.toLowerCase()
   let s = 0
   for (const t of tokens) if (hay.includes(t)) s += 1
   return s
+}
+
+// 同分时按 star 数（若有）降序
+function byScoreThenStars(a, b) {
+  return b.s - a.s || (b.p.stars || 0) - (a.p.stars || 0)
 }
 
 function whyFor(p, roleUsed, description) {
@@ -181,7 +324,9 @@ function summarize(role, roleLabel, query, results) {
   const body = results
     .map(
       (r, i) =>
-        `${i + 1}. [${r.name}](${r.url}) — ${r.oneLiner}\n   安装：${r.installCmd}`,
+        `${i + 1}. [${r.name}](${r.url}) — ${r.oneLiner}` +
+        (r.stars != null ? ` （⭐${r.stars}）` : '') +
+        `\n   安装：${r.installCmd}`,
     )
     .join('\n')
   return `${head}\n\n${body}`
@@ -206,11 +351,11 @@ export function recommend({ role, description, plugins, roles, maxResults = 8 })
     const others = plugins.filter((p) => !base.includes(p))
     const rankedBase = base
       .map((p) => ({ p, s: scorePlugin(p, tokens) }))
-      .sort((a, b) => b.s - a.s)
+      .sort(byScoreThenStars)
     const extra = others
       .map((p) => ({ p, s: scorePlugin(p, tokens) }))
       .filter((x) => x.s > 0)
-      .sort((a, b) => b.s - a.s)
+      .sort(byScoreThenStars)
       .slice(0, maxResults)
     scored = [...rankedBase, ...extra].slice(0, maxResults)
   } else if (base.length) {
@@ -219,7 +364,7 @@ export function recommend({ role, description, plugins, roles, maxResults = 8 })
     scored = plugins
       .map((p) => ({ p, s: scorePlugin(p, tokens) }))
       .filter((x) => x.s > 0)
-      .sort((a, b) => b.s - a.s)
+      .sort(byScoreThenStars)
       .slice(0, maxResults)
   }
 
@@ -232,7 +377,8 @@ export function recommend({ role, description, plugins, roles, maxResults = 8 })
     repo: p.repo,
     url: p.url,
     installCmd: p.installCmd,
-    oneLiner: p.description,
+    oneLiner: p.descriptionZh || p.description,
+    stars: p.stars,
     score: s,
     why: whyFor(p, roleUsed, description),
   }))
@@ -243,9 +389,6 @@ export function recommend({ role, description, plugins, roles, maxResults = 8 })
 
 // ---- 个人插件栈持久化（~/.dsh/stack-curator/stack.json）----
 
-export function stackDir() {
-  return join(homedir(), '.dsh', 'stack-curator')
-}
 export function stackFile() {
   return join(stackDir(), 'stack.json')
 }
@@ -297,8 +440,9 @@ export function formatStack(stack, plugins) {
   if (!stack.plugins.length) return '我的插件栈为空。用 add 加入推荐结果，或用 install 一键安装。'
   const lines = stack.plugins.map((p, i) => {
     const meta = findPlugin(plugins, p.name)
-    const desc = meta ? meta.description : ''
-    return `${i + 1}. [${p.name}](${p.url}) — ${desc}\n   安装：${p.installCmd}`
+    const desc = meta ? (meta.descriptionZh || meta.description) : ''
+    const stars = meta && meta.stars != null ? ` （⭐${meta.stars}）` : ''
+    return `${i + 1}. [${p.name}](${p.url}) — ${desc}${stars}\n   安装：${p.installCmd}`
   })
   return `我的插件栈（共 ${stack.plugins.length} 个）：\n\n${lines.join('\n')}`
 }

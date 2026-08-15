@@ -34,8 +34,8 @@ ok('parseReadme 解析分类与条目', () => {
   assert.equal(ps.length, 3)
   assert.equal(ps[0].category, 'UI Enhancements')
   assert.equal(ps[0].author, 'alice')
-  assert.equal(ps[0].repo, 'foo')
-  assert.equal(ps[0].name, 'alice/foo')
+  assert.equal(ps[0].repo, 'alice/foo')
+  assert.equal(ps[0].name, 'foo')
   assert.ok(ps[0].installCmd.includes('dsh plugin --profile web add'))
   assert.equal(ps[2].category, 'Memory')
   // 不应解析到 Disclaimer 之后
@@ -84,7 +84,7 @@ ok('recommend 无 role 按描述关键词精排', () => {
   const r = recommend({ description: 'memory 记忆', plugins: PLUGINS, roles: ROLES, maxResults: 8 })
   assert.equal(r.role, null)
   assert.ok(r.results.length >= 1)
-  assert.equal(r.results[0].name, 'carol/mem')
+  assert.equal(r.results[0].name, 'mem')
 })
 
 ok('recommend 角色+描述：基线优先、描述补充', () => {

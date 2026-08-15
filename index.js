@@ -3,7 +3,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import { execFileSync } from 'node:child_process'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { PLUGINS } from './data/plugins.js'
+import { PLUGINS as BUNDLED_PLUGINS } from './data/plugins.js'
 import { ROLES, ROLE_KEYS } from './data/roles.js'
 import {
   recommend,
@@ -13,6 +13,9 @@ import {
   formatStack,
   buildInstallCommands,
   findPlugin,
+  loadPlugins,
+  updateCatalog,
+  listCategories,
 } from './stack-curator-core.js'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -86,7 +89,7 @@ export function apply(ctx) {
         const out = recommend({
           role: args.role,
           description: args.description,
-          plugins: PLUGINS,
+          plugins: await loadPlugins(),
           roles: ROLES,
           maxResults: typeof args.maxResults === 'number' ? args.maxResults : 8,
         })
@@ -103,14 +106,15 @@ export function apply(ctx) {
         '管理用户的个人插件栈（持久化于 ~/.dsh/stack-curator/stack.json）。' +
         '支持：list（查看我的栈）、add（把插件加入栈，需 plugins 数组）、' +
         'remove（从栈移除）、install（一键安装栈上的插件，必须 confirm=true 才真正执行 ' +
-        'dsh plugin add）、refresh_snapshot（重新拉取 awesome-dsh-plugin 列表生成快照）。' +
+        'dsh plugin add）、update_catalog（更新插件目录：优先拉取 awesome-dsh-plugin 官方' +
+        '注册表 /plugins.json，失败回退 raw README，结果缓存到 ~/.dsh/stack-curator/catalog.json）。' +
         '形成高度个性化的本地插件库。',
       parameters: {
         action: {
           type: 'string',
           required: true,
           description:
-            'list | add | remove | install | refresh_snapshot',
+            'list | add | remove | install | update_catalog（refresh_snapshot 为其兼容别名）',
         },
         plugins: {
           type: 'array',
@@ -146,12 +150,13 @@ export function apply(ctx) {
       async execute(args) {
         const action = (args.action || '').toLowerCase()
         const profile = args.profile || 'web'
+        const plugins = await loadPlugins()
 
         if (action === 'list') {
           const stack = await readStack()
           return {
             action,
-            summary: formatStack(stack, PLUGINS),
+            summary: formatStack(stack, plugins),
             commands: [],
             installed: [],
             failed: [],
@@ -168,12 +173,12 @@ export function apply(ctx) {
               failed: [],
             }
           }
-          const { stack, added } = await addToStack(args.plugins, PLUGINS)
+          const { stack, added } = await addToStack(args.plugins, plugins)
           return {
             action,
             summary:
               `已加入 ${added.length} 个：${added.join('、') || '（无新增）'}\n` +
-              formatStack(stack, PLUGINS),
+              formatStack(stack, plugins),
             commands: [],
             installed: added,
             failed: [],
@@ -253,18 +258,23 @@ export function apply(ctx) {
           }
         }
 
-        if (action === 'refresh_snapshot') {
+        if (action === 'update_catalog' || action === 'refresh_snapshot') {
           try {
-            execFileSync(
-              'node',
-              [HERE + '/scripts/refresh-snap.mjs'],
-              { stdio: 'pipe', timeout: 120000 },
-            )
+            const res = await updateCatalog({
+              onStatus: () => {},
+            })
+            const cats = listCategories(plugins)
+            const topCats = cats
+              .slice(0, 6)
+              .map((c) => `${c.category}(${c.count})`)
+              .join('、')
             return {
               action,
               summary:
-                '已重新拉取 awesome-dsh-plugin 列表并生成 data/plugins.js 快照。',
-              commands: [],
+                `已更新插件目录：共 ${res.count} 个（来源 ${res.source}），缓存于 ${res.path}。\n` +
+                `分类预览：${topCats} …\n` +
+                '下次 recommend_stack 会自动用上新目录。',
+              commands: ['node ' + HERE + '/scripts/refresh-catalog.mjs'],
               installed: [],
               failed: [],
             }
@@ -272,12 +282,12 @@ export function apply(ctx) {
             return {
               action,
               summary:
-                '自动刷新失败（可能网络受限）：' +
+                '更新失败（可能网络受限）：' +
                 String(e.message || e).slice(0, 160) +
                 '\n请在本机手动运行：node ' +
                 HERE +
-                '/scripts/refresh-snap.mjs',
-              commands: ['node ' + HERE + '/scripts/refresh-snap.mjs'],
+                '/scripts/refresh-catalog.mjs',
+              commands: ['node ' + HERE + '/scripts/refresh-catalog.mjs'],
               installed: [],
               failed: [],
             }
@@ -287,7 +297,7 @@ export function apply(ctx) {
         return {
           action,
           summary:
-            '未知 action。可用：list / add / remove / install / refresh_snapshot。',
+            '未知 action。可用：list / add / remove / install / update_catalog。',
           commands: [],
           installed: [],
           failed: [],

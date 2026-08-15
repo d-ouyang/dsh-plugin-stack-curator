@@ -2,7 +2,7 @@
 
 一个帮你「从 595 个 dsh 插件里挑出最适合你的那几个」的策展插件：按职业角色或自然语言描述推荐，并把选中的插件沉淀成你自己的本地插件栈。
 
-数据来源：[awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin)（已解析为 `data/plugins.js` 快照，共 595 个插件 / 12 个分类）。
+数据来源：[awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) 的**官方公开注册表** `https://awesome-dsh-plugin.com/plugins.json`（共 595 个插件 / 12 个分类）。该注册表由 awesome 项目自己的 `build-site.mjs` 基于 README（真相源）生成、并经 probe 脚本富集（npm 名、GitHub star 等）。插件内已内置一份快照作为离线兜底；可随时用 `update_catalog` 拉取最新。
 
 ---
 
@@ -21,7 +21,7 @@ dsh plugin --profile web add /abs/path/to/dsh-plugin-stack-curator
 ## 2. 两个工具
 
 - `recommend_stack` — 推荐插件（按角色 / 描述）
-- `manage_stack` — 管理「我的插件栈」（`~/.dsh/stack-curator/stack.json`）
+- `manage_stack` — 管理「我的插件栈」（`~/.dsh/stack-curator/stack.json`）；`update_catalog` 则负责刷新插件目录（缓存到 `~/.dsh/stack-curator/catalog.json`）
 
 ---
 
@@ -46,8 +46,8 @@ dsh plugin --profile web add /abs/path/to/dsh-plugin-stack-curator
 > 查看我的插件栈。
 > 把我栈里的插件一键安装到 web profile（确认后执行）。
 
-**G. 刷新快照**
-> 重新拉取 awesome-dsh-plugin 列表，更新插件快照。
+**G. 更新插件目录**
+> 更新一下插件目录。（→ 调用 `manage_stack({action:"update_catalog"})`，从 awesome 官方注册表拉取最新列表，缓存到 `~/.dsh/stack-curator/catalog.json`）
 
 ---
 
@@ -58,15 +58,15 @@ dsh plugin --profile web add /abs/path/to/dsh-plugin-stack-curator
 ```
 为你（角色预设「教师」）精选 8 个插件：
 
-1. [hanzhangzzz/dsh-diagram] — Editable Excalidraw diagrams for DeepSeek Harness conversations.
-   安装：dsh plugin --profile web add https://github.com/hanzhangzzz/dsh-diagram
-2. [AKS1st/dsh-mermaid] — Render Mermaid code fences in DSH Web chat messages as SVG diagrams.
-3. [Nagi-ovo/dsh-visualize] — In-conversation generative UI: interactive HTML cards into the chat stream.
-4. [omdsh-dev/dsh-genui] — Interactive UI components rendered inline in replies.
-5. [1624318455/dsh-plugin-tts] — Reads assistant replies aloud via free Edge TTS.
-6. [NewDaNew/dsh-voice-input] — Voice input for the web UI.
-7. [omdsh-dev/dsh-annotation] — Select text → annotate → send with your message.
-8. [dingyi222666/dsh-focus-chat] — A "focus chat" minimal view that shows only final outputs.
+1. [dsh-diagram](https://github.com/hanzhangzzz/dsh-diagram) — DeepSeek Harness 会话中的可编辑 Excalidraw 图表。 （⭐2）
+   安装：dsh plugin --profile web add dsh-diagram
+2. [dsh-mermaid](https://github.com/AKS1st/dsh-mermaid) — 把 DSH Web 会话消息中的 Mermaid 代码围栏渲染为惰性加载的 SVG 图表。 （⭐2）
+3. [dsh-visualize](https://github.com/Nagi-ovo/dsh-visualize) — 对话内生成式 UI：模型把交互式 HTML 卡片直接画进会话流。 （⭐95）
+4. [dsh-genui](https://github.com/omdsh-dev/dsh-genui) — 助手回复内渲染交互式 UI 组件。 （⭐88）
+5. [dsh-plugin-tts](https://github.com/1624318455/dsh-plugin-tts) — 用免费 Edge TTS 朗读 AI 回复。 （⭐1）
+6. [dsh-voice-input](https://github.com/NewDaNew/dsh-voice-input) — Web UI 语音输入。 （⭐0）
+7. [dsh-annotation](https://github.com/omdsh-dev/dsh-annotation) — 选中文字→批注→随消息发送。 （⭐46）
+8. [dsh-focus-chat](https://github.com/dingyi222666/dsh-focus-chat) — 「聚焦会话」精简视图。 （⭐16）
 ```
 
 **场景 B · 描述「营销增长 / 社媒 / 多语言」**
@@ -74,25 +74,25 @@ dsh plugin --profile web add /abs/path/to/dsh-plugin-stack-curator
 ```
 根据你的描述「我需要做营销增长，要发到社媒、做多语言」推荐 6 个插件：
 
-1. [THEWOLFWALKER/dsh-notifier] — Unified notification for DSH: 25+ channels (Telegram/Feishu/WeCom/...).
-2. [whyihaveyou/dsh-suite#plugin-notify] — IM webhook and local notifications (Feishu/WeCom/DingTalk/...).
-3. [ThreeBody6666/dsh-im-hub] — Multi-platform IM gateway: Feishu/WeCom/Telegram.
-4. [yangyongzhen/dsh-notify] — Task-completion notifications via ServerChan/DingTalk/Feishu/webhooks.
-5. [ShiXiangYu2/dsh-translate-pro] — Professional translation for DSH: 18 target languages.
-6. [superdesigndev/treg] — Tool catalog: search ~2,600 external endpoints (SEO/social/ad libraries...).
+1. [dsh-notifier](https://github.com/THEWOLFWALKER/dsh-notifier) — 统一通知推送：一个 notify() API 打通 25+ 渠道（Telegram/飞书/企微/...）。 （⭐0）
+   安装：dsh plugin --profile web add dsh-notifier
+2. [dsh-im-hub](https://github.com/ThreeBody6666/dsh-im-hub) — 多平台 IM 网关：飞书/企微/Telegram。 （⭐2）
+3. [dsh-suite#plugin-notify](https://github.com/whyihaveyou/dsh-suite/tree/main/packages/plugins/plugin-notify) — 回合完成/错误/待审批时推送 IM webhook。 （⭐21）
+4. [dsh-lark-bridge](https://github.com/imetn/dsh-lark-bridge) — DeepSeek Harness 的飞书/Lark 双向控制器。 （⭐7）
+5. [telegram](https://github.com/LoserFox/telegram) — Telegram Bot API 桥接。 （⭐6）
+6. [dsh-lark-meeting-notifier](https://github.com/yeruizhi/dsh-lark-meeting-notifier) — 飞书会议提醒。 （⭐6）
 ```
 
 **场景 D · 描述「长文写作 / 引用资料 / 记忆」**
 
 ```
-根据你的描述「我常写长文，需要引用资料和记忆」推荐 6 个插件：
+根据你的描述「我常写长文，需要引用资料和跨会话记忆，帮我挑插件」推荐 6 个插件：
 
-1. [omdsh-dev/dsh-mnemon] — Cross-agent, local-first persistent memory plugin.
-2. [ICCuse/dsh-file-memory] — File-backed working memory: memorize/recall key premises.
-3. [LoserFox/distill] — Automatic conversation distillation.
-4. [modusensus/dsh-mneme#dsh-mneme] — Cross-session memory: SQLite + Markdown mirror.
-5. [nowledge-co/nowledge-mem-deepseek-harness] — One memory layer for every AI tool and agent.
-6. [Jesse-njx/dsh-memory] — Cited memory over DSH's lossless session log.
+1. [dsh-mnemon](https://github.com/omdsh-dev/dsh-mnemon) — 跨 Agent、本地优先的持久记忆插件。 （⭐23）
+2. [dsh-file-memory](https://github.com/ICCuse/dsh-file-memory) — 文件型工作记忆。 （⭐0）
+3. [distill](https://github.com/LoserFox/distill) — 自动对话蒸馏。 （⭐16）
+4. [dsh-mneme#dsh-mneme](https://github.com/modusensus/dsh-mneme/tree/main/dsh-mneme) — 跨会话记忆：SQLite + Markdown 镜像。 （⭐9）
+5. [dsh-auto-memory](https://github.com/Aik358/dsh-auto-memory) — DSH 自动记忆插件：三层记忆自动注入与检索。 （⭐6）
 ```
 
 ---
@@ -103,6 +103,7 @@ dsh plugin --profile web add /abs/path/to/dsh-plugin-stack-curator
 node test.mjs              # 单元测试（9 个用例）
 node examples/run.mjs      # 跑内置 4 个示例场景
 node examples/run.mjs "我要画流程图和架构图"   # 自定义一句描述试推荐
+node scripts/refresh-catalog.mjs   # 从官方注册表刷新插件目录
 ```
 
-> 说明：awesome 列表的插件描述是英文，而用户多用中文描述需求，因此核心里内置了一张「中文意图词 → 英文关键词」的同义词表（`SYNONYMS`），让中文描述也能命中。若某次推荐不准，可在描述里补充更具体的英文关键词，或直接用 `role` 走预设基线。
+> 说明：awesome 列表的插件描述虽为英文，但官方注册表同时提供了中文 `description.zh` 字段，本插件优先展示中文；再用内置「中文意图词 → 英文关键词」同义词表（`SYNONYMS`）做跨语言匹配，让中文描述也能命中。若某次推荐不准，可在描述里补充更具体的英文关键词，或直接用 `role` 走预设基线。
