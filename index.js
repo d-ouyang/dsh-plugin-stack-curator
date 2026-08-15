@@ -33,7 +33,10 @@ export function apply(ctx) {
         '根据用户的职业角色（开发者/教师/设计师/写作者/营销/产品经理/学生/客服）' +
         '或从自然语言描述（如"我需要做营销增长""我要画流程图""我常写长文"）' +
         '匹配 awesome-dsh-plugin 列表中的优质插件，返回带安装命令的精选清单与推荐理由。' +
-        '可同时给 role 与 description：role 提供强基线，description 用于进一步精排。',
+        '可同时给 role 与 description：role 提供强基线，description 用于进一步精排。' +
+        '也可不提供 role/description，直接浏览整个插件池（按 star 数降序），' +
+        '并配合 maxResults 限制数量、minStars 限制最低星数——' +
+        '例如「列出所有插件」「显示 star 最高的 20 个」「只看 star≥50 的插件」。',
       parameters: {
         role: {
           type: 'string',
@@ -49,7 +52,12 @@ export function apply(ctx) {
         maxResults: {
           type: 'number',
           required: false,
-          description: '返回的最大插件数（默认 8）。',
+          description: '返回的最大插件数（默认 8；浏览全量时可调大，如 50）。',
+        },
+        minStars: {
+          type: 'number',
+          required: false,
+          description: '最小星数筛选：只看 GitHub star 数 ≥ 该值的插件（如 50）。不填则不按星数过滤。',
         },
       },
       output: {
@@ -69,6 +77,7 @@ export function apply(ctx) {
                   url: { type: 'string' },
                   installCmd: { type: 'string' },
                   oneLiner: { type: 'string' },
+                  stars: { type: ['number', 'null'] },
                   why: { type: 'string' },
                 },
               },
@@ -79,11 +88,13 @@ export function apply(ctx) {
         render: (_args, value) => [{ type: 'text', text: value.summary }],
       },
       async execute(args) {
-        if (!args.role && !args.description) {
+        // 完全无输入、也无浏览意图（未设 minStars）时，给出引导提示
+        if (!args.role && !args.description && typeof args.minStars !== 'number') {
           const fallback =
-            '请告诉我你的角色或需求。可选角色：' +
+            '请告诉我你的角色或需求，或让我列出整个插件池。可选角色：' +
             ROLE_KEYS.map((k) => `${ROLES[k].emoji} ${ROLES[k].label}`).join('、') +
-            '；或描述你常做的工作（如"营销增长""画流程图""写长文"）。'
+            '；或描述你常做的工作（如"营销增长""画流程图""写长文"）；' +
+            '也可以直接说「列出所有插件」「显示 star 最高的 20 个」「只看 star≥50 的」。'
           return { role: null, query: null, results: [], summary: fallback }
         }
         const out = recommend({
@@ -92,6 +103,7 @@ export function apply(ctx) {
           plugins: await loadPlugins(),
           roles: ROLES,
           maxResults: typeof args.maxResults === 'number' ? args.maxResults : 8,
+          minStars: typeof args.minStars === 'number' ? args.minStars : null,
         })
         return out
       },

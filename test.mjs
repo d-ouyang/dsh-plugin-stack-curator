@@ -105,4 +105,26 @@ ok('findPlugin 多形式匹配', () => {
   assert.ok(findPlugin(PLUGINS, 'foo'))
 })
 
+const POOL = [
+  { name: 'low', stars: 3, category: 'X', url: 'u', installCmd: 'c', descriptionZh: 'd', description: 'd' },
+  { name: 'high', stars: 99, category: 'X', url: 'u', installCmd: 'c', descriptionZh: 'd', description: 'd' },
+  { name: 'mid', stars: 30, category: 'X', url: 'u', installCmd: 'c', descriptionZh: 'd', description: 'd' },
+]
+
+ok('recommend 全量浏览：无 role/description 按星数降序', () => {
+  const r = recommend({ plugins: POOL, maxResults: 50 })
+  assert.equal(r.results.length, 3)
+  assert.equal(r.results[0].name, 'high')
+  assert.equal(r.results[1].name, 'mid')
+  assert.equal(r.results[2].name, 'low')
+  assert.ok(r.summary.includes('插件总池子'))
+})
+
+ok('recommend minStars 过滤掉低于阈值的', () => {
+  const r = recommend({ plugins: POOL, minStars: 50, maxResults: 50 })
+  assert.equal(r.results.length, 1)
+  assert.equal(r.results[0].name, 'high')
+  assert.ok(r.summary.includes('⭐≥50'))
+})
+
 console.log(`\n全部通过：${passed} 个用例 ✓`)

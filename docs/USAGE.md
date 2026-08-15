@@ -24,8 +24,10 @@ dsh plugin --profile web add github:d-ouyang/dsh-plugin-stack-curator
 
 ## 2. 两个工具
 
-- `recommend_stack` — 推荐插件（按角色 / 描述）
+- `recommend_stack` — 推荐插件（按角色 / 描述）。支持三个可选参数：`maxResults`（返回数量上限，默认 8）、`minStars`（最低 star 数筛选）、**不给任何角色/描述时即进入「浏览全量池子」模式**（按 star 数降序列出整个插件池）。
 - `manage_stack` — 管理「我的插件栈」（`~/.dsh/stack-curator/stack.json`）；`update_catalog` 则负责刷新插件目录（缓存到 `~/.dsh/stack-curator/catalog.json`）
+
+> 插件池数据完全支持筛选：官方注册表里每个插件都带 `stars` 字段，所以 `minStars` 和「按 star 降序浏览」都是真实可用的。
 
 ---
 
@@ -52,6 +54,15 @@ dsh plugin --profile web add github:d-ouyang/dsh-plugin-stack-curator
 
 **G. 更新插件目录**
 > 更新一下插件目录。（→ 调用 `manage_stack({action:"update_catalog"})`，从 awesome 官方注册表拉取最新列表，缓存到 `~/.dsh/stack-curator/catalog.json`）
+
+**H. 浏览整个插件池（不限定角色/描述）**
+> 把 awesome 里的插件全列出来看看。（→ 不给 role/description，自动进入全量浏览，按 star 降序）
+
+**I. 只看高星插件（星数筛选）**
+> 只给我看 star 超过 50 的插件。（→ 调用 `recommend_stack({minStars:50})`，从全量池里筛出 ⭐50+ 并按 star 降序）
+
+**J. 高星 + 限制数量**
+> 挑 5 个 star 超过 20 的插件。（→ `recommend_stack({minStars:20, maxResults:5})`）
 
 ---
 
@@ -99,12 +110,37 @@ dsh plugin --profile web add github:d-ouyang/dsh-plugin-stack-curator
 5. [dsh-auto-memory](https://github.com/Aik358/dsh-auto-memory) — DSH 自动记忆插件：三层记忆自动注入与检索。 （⭐6）
 ```
 
+**场景 H · 浏览全量池（不给角色/描述，按 star 降序）**
+
+```
+插件总池子（共 8 个，按星数降序）
+
+1. [mirage#dsh](https://github.com/strukto-ai/mirage/tree/main/typescript/packages/dsh) — 把文件系统与 bash 提供者换成 mirage 虚拟工作区… （⭐3435）
+   安装：dsh plugin --profile web add @struktoai/mirage-dsh
+2. [dsh-web-ui#packages/dsh-web-ui-all](https://github.com/zhu1090093659/dsh-web-ui/tree/main/packages/dsh-web-ui-all) — DSH Web UI 插件与皮肤合集… （⭐2314）
+   安装：dsh plugin --profile web add @linxin666/dsh-web-ui-all
+3. [modlens](https://github.com/liustack/modlens) — 为纯文本模型架起视觉桥梁… （⭐1582）
+   安装：dsh plugin --profile web add @liustack/modlens
+4. [dsh-TUI](https://github.com/ccch1mneyyy/dsh-TUI) — Claude Code 风格全屏终端 UI… （⭐1071）
+   安装：dsh plugin --profile web add @deepseek-harness-tui/dsh-tui
+5. [Aegis](https://github.com/GanyuanRan/Aegis) — 面向编码 Agent 的软件工程方法包… （⭐1014）
+   安装：dsh plugin --profile web add github:GanyuanRan/Aegis
+6. [DSH-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar) — 侧边栏完整工作台… （⭐945）
+   安装：dsh plugin --profile web add dsh-better-sidebar
+7. [dsh-deep-whale](https://github.com/Small-tailqwq/dsh-deep-whale) — DSH Web 鲸鱼娘皮肤系列… （⭐767）
+   安装：dsh plugin --profile web add github:Small-tailqwq/dsh-deep-whale
+8. [treg](https://github.com/superdesigndev/treg) — 给 Agent 的工具目录… （⭐412）
+   安装：dsh plugin --profile web add github:superdesigndev/treg
+```
+
+（真实数据来自 `node examples/run.mjs` 的浏览模式，省略了正文细节。）
+
 ---
 
 ## 5. 本地自检
 
 ```bash
-node test.mjs              # 单元测试（9 个用例）
+node test.mjs              # 单元测试（11 个用例）
 node examples/run.mjs      # 跑内置 4 个示例场景
 node examples/run.mjs "我要画流程图和架构图"   # 自定义一句描述试推荐
 node scripts/refresh-catalog.mjs   # 从官方注册表刷新插件目录

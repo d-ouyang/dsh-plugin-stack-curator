@@ -29,7 +29,10 @@ harness 会按意图自动路由到下方两个工具，无需手动指定工具
 |---|---|---|
 | `role` | 否 | `developer` / `teacher` / `designer` / `writer` / `marketing` / `product_manager` / `student` / `support`（也接受中文标签，如「教师」） |
 | `description` | 否 | 自然语言描述需求，用于关键词精排 |
-| `maxResults` | 否 | 默认 8 |
+| `maxResults` | 否 | 默认 8（想多看些可调大，如 50） |
+| `minStars` | 否 | 最小星数筛选：只看 GitHub star 数 ≥ 该值的插件（如 50）；不填则不按星数过滤 |
+
+若同时不填 `role` 与 `description`，则**按星数降序浏览整个插件总池子**——适合说「列出所有插件」「显示 star 最高的 20 个」「只看 star≥50 的插件」。
 
 返回带 `installCmd`、`oneLiner`（优先中文）、`stars`、`why` 的精选清单。
 
@@ -50,6 +53,9 @@ harness 会按意图自动路由到下方两个工具，无需手动指定工具
 - 「更新一下插件目录。」 ← 触发 `update_catalog`
 - 「我需要做营销增长，要发到社媒、做多语言内容，推荐些插件。」
 - 「我常写长文，需要引用资料和跨会话记忆，帮我挑插件。」
+- 「列出所有插件（按 star 排序）。」
+- 「显示 star 数最高的 20 个插件。」
+- 「只显示 star 数 ≥50 的插件。」
 - 「把我刚才看到的 teacher 推荐里前 3 个加进我的插件栈。」
 - 「把我栈里的插件一键安装到 web profile（确认后执行）。」
 
@@ -82,7 +88,7 @@ node scripts/refresh-catalog.mjs
 
 ```bash
 node --check index.js
-node test.mjs                 # 9 个单元测试
+node test.mjs                 # 11 个单元测试
 node examples/run.mjs         # 4 个示例场景
 node scripts/refresh-catalog.mjs # 从官方注册表刷新插件目录
 ```

@@ -309,18 +309,21 @@ function byScoreThenStars(a, b) {
   return b.s - a.s || (b.p.stars || 0) - (a.p.stars || 0)
 }
 
-function whyFor(p, roleUsed, description) {
+function whyFor(p, roleUsed, description, browse) {
+  if (browse) return `全量插件池（按星数排序${p.stars != null ? `，⭐${p.stars}` : ''}）`
   if (roleUsed) return `属于「${roleUsed}」预设精选，贴合该角色的典型工作流`
   if (description) return `与你的描述关键词匹配（${p.category}）`
   return `来自全量列表的匹配结果`
 }
 
-function summarize(role, roleLabel, query, results) {
-  const head = role
-    ? `为你（角色预设「${roleLabel || role}」）精选 ${results.length} 个插件：`
-    : query
-      ? `根据你的描述「${query}」推荐 ${results.length} 个插件：`
-      : `为你推荐 ${results.length} 个插件：`
+function summarize(role, roleLabel, query, results, browse, minStars) {
+  const head = browse
+    ? `插件总池子（共 ${results.length} 个${typeof minStars === 'number' ? `，已按 ⭐≥${minStars} 筛选` : ''}，按星数降序）`
+    : role
+      ? `为你（角色预设「${roleLabel || role}」）精选 ${results.length} 个插件：`
+      : query
+        ? `根据你的描述「${query}」推荐 ${results.length} 个插件：`
+        : `为你推荐 ${results.length} 个插件：`
   const body = results
     .map(
       (r, i) =>
@@ -336,7 +339,7 @@ function summarize(role, roleLabel, query, results) {
  * 推荐核心。role 提供强基线，description 用于关键词精排/补充。
  * @returns {{role:?string, query:?string, results:Array, summary:string}}
  */
-export function recommend({ role, description, plugins, roles, maxResults = 8 }) {
+export function recommend({ role, description, plugins, roles, maxResults = 8, minStars = null }) {
   let base = []
   let roleUsed = null
   const roleKey = normalizeRole(role, roles)
@@ -346,7 +349,15 @@ export function recommend({ role, description, plugins, roles, maxResults = 8 })
     base = want.map((slug) => findPlugin(plugins, slug)).filter(Boolean)
   }
   const tokens = expandTokens(tokenize(description || ''))
+
+  // 最小星数筛选：未知星数（readme 兜底数据）一律保留，避免误伤
+  const applyMinStars = (list) =>
+    typeof minStars === 'number'
+      ? list.filter((p) => p.stars == null || p.stars >= minStars)
+      : list
+
   let scored
+  let browse = false
   if (base.length && tokens.length) {
     const others = plugins.filter((p) => !base.includes(p))
     const rankedBase = base
@@ -360,11 +371,18 @@ export function recommend({ role, description, plugins, roles, maxResults = 8 })
     scored = [...rankedBase, ...extra].slice(0, maxResults)
   } else if (base.length) {
     scored = base.map((p) => ({ p, s: 1 }))
-  } else {
-    scored = plugins
+  } else if (tokens.length) {
+    scored = applyMinStars(plugins)
       .map((p) => ({ p, s: scorePlugin(p, tokens) }))
       .filter((x) => x.s > 0)
       .sort(byScoreThenStars)
+      .slice(0, maxResults)
+  } else {
+    // 全量浏览：无 role、无 description，按 star 数降序展示整个插件池
+    browse = true
+    scored = applyMinStars(plugins)
+      .map((p) => ({ p, s: p.stars || 0 }))
+      .sort((a, b) => (b.p.stars || 0) - (a.p.stars || 0))
       .slice(0, maxResults)
   }
 
@@ -380,10 +398,10 @@ export function recommend({ role, description, plugins, roles, maxResults = 8 })
     oneLiner: p.descriptionZh || p.description,
     stars: p.stars,
     score: s,
-    why: whyFor(p, roleUsed, description),
+    why: whyFor(p, roleUsed, description, browse),
   }))
 
-  const summary = summarize(roleUsed, roleLabel, description, results)
+  const summary = summarize(roleUsed, roleLabel, description, results, browse, minStars)
   return { role: roleUsed, query: description || null, results, summary }
 }
 

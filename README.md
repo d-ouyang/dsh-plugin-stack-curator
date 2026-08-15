@@ -29,7 +29,10 @@ The harness auto-routes to the two tools below by intent — no tool name needed
 |---|---|---|
 | `role` | no | `developer` / `teacher` / `designer` / `writer` / `marketing` / `product_manager` / `student` / `support` (Chinese labels accepted) |
 | `description` | no | natural-language need, used for keyword reranking |
-| `maxResults` | no | default 8 |
+| `maxResults` | no | default 8 (raise it, e.g. 50, to browse more of the pool) |
+| `minStars` | no | minimum GitHub stars filter — only show plugins with `stars ≥ N` (e.g. 50); off when omitted |
+
+If you omit both `role` and `description`, it browses the **entire plugin pool sorted by stars** — perfect for "list all plugins", "show the top 20 by stars", or "only plugins with ≥50 stars".
 
 Returns a curated list with `installCmd`, `oneLiner` (Chinese when available), `stars`, and `why`.
 
@@ -50,6 +53,9 @@ Persists to `~/.dsh/stack-curator/stack.json`. `update_catalog` refreshes the pl
 - "Update the plugin catalog."  ← triggers `update_catalog`
 - "I do marketing growth, post to social media, need multilingual content."
 - "I write long-form docs and need citation + memory — pick plugins for me."
+- "List all plugins (sorted by stars)."
+- "Show the top 20 plugins by GitHub stars."
+- "Only show plugins with at least 50 stars."
 - "Add the first 3 of the teacher recommendations to my stack."
 - "Install my stack to the web profile (confirm)."
 
@@ -82,7 +88,7 @@ Result is cached at `~/.dsh/stack-curator/catalog.json`; `recommend_stack` reads
 
 ```bash
 node --check index.js
-node test.mjs                 # 9 unit tests
+node test.mjs                 # 11 unit tests
 node examples/run.mjs         # 4 sample scenarios
 node scripts/refresh-catalog.mjs # refresh the plugin catalog from the official registry
 ```
