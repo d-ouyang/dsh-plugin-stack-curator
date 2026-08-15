@@ -7,7 +7,7 @@
 
 ## 0. 插件目录的数据来源（关键设计）
 
-本插件不直接假定某一版列表，而是消费 **awesome-dsh-plugin 项目的官方公开注册表**：
+本插件不直接假定某一版列表，而是消费 **awesome-dsh-plugin 项目的社区公开注册表**：
 
 - 真相源（source of truth）：awesome 仓库各语言 README 里的 bullet 条目 `- [author/repo](github-url) - 描述`。
 - 维护流程：`build-site.mjs` 解析 README → 调用 `probe-npm` / `probe-readmes` / `probe-stars` 等脚本抓取 npm 名、README 正文、GitHub star 等富集信息 → 生成站点与**公开注册表 API `/plugins.json`**（脚本注释明写 *"Public registry API: /plugins.json — deterministic; consumed by the find plugin"*）。
@@ -74,7 +74,7 @@
 - `add`：把给定 slug 加入栈（去重），持久化。
 - `remove`：从栈移除给定 slug。
 - `install`：`confirm=true` 时对每个栈内插件执行 `dsh plugin --profile <p> add <url>`；失败项单独列出。**安装后需重启 3080 才能加载新插件**。
-- `update_catalog`：调用 `updateCatalog()` 从官方注册表（失败回退 raw README）拉取最新插件目录，写入 `~/.dsh/stack-curator/catalog.json`；之后 `recommend_stack` 自动使用新目录。无网络时返回手动命令提示。
+- `update_catalog`：调用 `updateCatalog()` 从社区注册表（失败回退 raw README）拉取最新插件目录，写入 `~/.dsh/stack-curator/catalog.json`；之后 `recommend_stack` 自动使用新目录。无网络时返回手动命令提示。
 
 ---
 
@@ -82,7 +82,7 @@
 
 纯函数、无第三方依赖（仅 `node:*`），便于单元测试与复用。
 
-- **`fetchRegistry()` / `normalizeRegistry(doc)`**：拉取并归一化官方注册表。`normalizeRegistry` 把 `{owner,name,url,page,category,description:{en,zh},npm,stars,install,added}` 映射为本插件结构（含中文 `descriptionZh` 与 `stars`）。
+- **`fetchRegistry()` / `normalizeRegistry(doc)`**：拉取并归一化社区注册表。`normalizeRegistry` 把 `{owner,name,url,page,category,description:{en,zh},npm,stars,install,added}` 映射为本插件结构（含中文 `descriptionZh` 与 `stars`）。
 - **`parseReadme(md)`**：README 解析兜底。以 `## Plugins` 为起点，遇下一个 `## ` 结束；`### ` 作为分类；条目正则 `^\s*-\s+\[([^\]]+)\]\((https?://github\.com/...)\)\s*-\s*(.*)$` 提取 `author/repo`、url、描述（并剥离行尾分类标签）。统一约定 `name`=短名、`repo`=owner/name。
 - **`updateCatalog({onStatus})`**：优先 `fetchRegistry()`，失败回退 `parseReadme(await fetchReadmeRaw())`；结果写 `CATALOG_CACHE`（`~/.dsh/stack-curator/catalog.json`）。
 - **`loadPlugins()`**：每次调用优先读 `CATALOG_CACHE`，缺失/损坏则回退内置 `data/plugins.js` 快照。这样刷新后即时生效，且生产环境只读 bundle 也能用缓存。
@@ -99,7 +99,7 @@
 
 ### 数据文件
 
-- `data/plugins.json` + `data/plugins.js`：从官方注册表快照生成的**内置兜底**数据（595 个插件）。`plugins.js` 是 ESM 模块，被 `index.js` 直接 import。
+- `data/plugins.json` + `data/plugins.js`：从社区注册表快照生成的**内置兜底**数据（595 个插件）。`plugins.js` 是 ESM 模块，被 `index.js` 直接 import。
 - `data/roles.js`：8 个角色预设，每个 6–8 个真实存在的插件 slug（已校验全部可解析）。
 - `scripts/refresh-catalog.mjs`：命令行版刷新——调用 `updateCatalog()`，从 `awesome-dsh-plugin.com/plugins.json` 拉取并写缓存。
 
@@ -116,7 +116,7 @@
 | 加入栈 | `manage_stack({action:"add",plugins:[...]})` | 去重持久化 |
 | 移除栈 | `manage_stack({action:"remove",plugins:[...]})` | 从栈删除 |
 | 一键安装 | `manage_stack({action:"install",confirm:true})` | 逐条执行 dsh plugin add |
-| 更新插件目录 | `manage_stack({action:"update_catalog"})` 或 `node scripts/refresh-catalog.mjs` | 从官方注册表拉取最新，缓存到 catalog.json |
+| 更新插件目录 | `manage_stack({action:"update_catalog"})` 或 `node scripts/refresh-catalog.mjs` | 从社区注册表拉取最新，缓存到 catalog.json |
 
 ---
 
@@ -148,7 +148,7 @@ node --check index.js
 node test.mjs           # 9 个单元测试
 node examples/run.mjs   # 4 个示例场景
 
-# 更新插件目录（从官方注册表）
+# 更新插件目录（从社区注册表）
 node scripts/refresh-catalog.mjs                 # 联网
 ```
 
@@ -156,8 +156,8 @@ node scripts/refresh-catalog.mjs                 # 联网
 
 ## 7. 设计取舍与已知限制
 
-- **数据策略（消费官方注册表 + 缓存）**：默认提交注册表快照（离线可用、可预测），并暴露 `update_catalog` 实时从 `awesome-dsh-plugin.com/plugins.json` 刷新，结果缓存到 `~/.dsh/stack-curator/catalog.json`；`recommend_stack` 优先读缓存。比单纯解析 README 更鲁棒：字段更全（stars/npm/中文描述），且是 awesome 项目官方指定的程序消费入口。
+- **数据策略（消费社区注册表 + 缓存）**：默认提交注册表快照（离线可用、可预测），并暴露 `update_catalog` 实时从 `awesome-dsh-plugin.com/plugins.json` 刷新，结果缓存到 `~/.dsh/stack-curator/catalog.json`；`recommend_stack` 优先读缓存。比单纯解析 README 更鲁棒：字段更全（stars/npm/中文描述），且是 awesome 项目官方指定的程序消费入口。
 - **推荐机制（预设 + 关键词精排）**：角色给强基线，描述做关键词精排；跨语言靠 `SYNONYMS` 桥接。若需更强语义理解，可在 harness 侧用 LLM 对返回的候选做二次解释（工具已返回 `oneLiner` 与 `why` 供 LLM 复用）。
 - **不自动安装（除非确认）**：`install` 需 `confirm=true`，且执行的是官方 `dsh plugin add`，安装后需重启 web 服务。
-- **列表刷新需网络**：`update_catalog` 调用官方注册表；离线时回退内置快照，不会报错中断。
+- **列表刷新需网络**：`update_catalog` 调用社区注册表；离线时回退内置快照，不会报错中断。
 - **star 数来自注册表快照**：仅作排序辅助信号，不代表实时值。

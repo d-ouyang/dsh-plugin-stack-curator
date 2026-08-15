@@ -4,7 +4,7 @@
 
 > 为 DeepSeek Harness（dsh）用户「按角色 / 需求推荐插件」，并管理你自己的个性化本地插件栈。解决插件市场繁荣后的「选择困难症」——在 595+ 个插件里帮你挑出最适合的那几个。
 
-数据来源：[awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) 的**官方公开注册表** `https://awesome-dsh-plugin.com/plugins.json`（共 595 个插件 / 12 个分类）。该注册表由 awesome 项目自己的 `build-site.mjs` 基于 README（真相源）生成、并经 probe 脚本富集（npm 名、GitHub star 等）。`recommend_stack` 直接消费它；仓库内同时内置一份快照作为离线兜底。用 `manage_stack({action:"update_catalog"})`（或 `node scripts/refresh-catalog.mjs`）即可拉取最新列表。
+数据来源：[awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) 的**社区公开注册表** `https://awesome-dsh-plugin.com/plugins.json`（共 595 个插件 / 12 个分类）。该注册表由 awesome 项目自己的 `build-site.mjs` 基于 README（真相源）生成、并经 probe 脚本富集（npm 名、GitHub star 等）。`recommend_stack` 直接消费它；仓库内同时内置一份快照作为离线兜底。用 `manage_stack({action:"update_catalog"})`（或 `node scripts/refresh-catalog.mjs`）即可拉取最新列表。
 
 ## 一键安装
 
@@ -45,7 +45,7 @@ harness 会按意图自动路由到下方两个工具，无需手动指定工具
 | `confirm` | 否 | `install` 需为 `true` 才真正执行 `dsh plugin add` |
 | `profile` | 否 | 默认 `web` |
 
-持久化于 `~/.dsh/stack-curator/stack.json`。`update_catalog` 会从官方注册表（失败则回退 raw README）刷新插件目录并缓存到 `~/.dsh/stack-curator/catalog.json`；此后 `recommend_stack` 自动使用最新副本。
+持久化于 `~/.dsh/stack-curator/stack.json`。`update_catalog` 会从社区注册表（失败则回退 raw README）刷新插件目录并缓存到 `~/.dsh/stack-curator/catalog.json`；此后 `recommend_stack` 自动使用最新副本。
 
 ## 试试看（在 3080 对话框里直接说）
 
@@ -72,7 +72,7 @@ harness 会按意图自动路由到下方两个工具，无需手动指定工具
 
 ## 更新插件目录
 
-目录来自 awesome 的官方注册表，两种等价方式刷新：
+目录来自 awesome 的社区注册表，两种等价方式刷新：
 
 ```bash
 # A) 对话内工具（说「更新插件目录」「刷新插件列表」会自动路由）
@@ -90,7 +90,7 @@ node scripts/refresh-catalog.mjs
 node --check index.js
 node test.mjs                 # 11 个单元测试
 node examples/run.mjs         # 4 个示例场景
-node scripts/refresh-catalog.mjs # 从官方注册表刷新插件目录
+node scripts/refresh-catalog.mjs # 从社区注册表刷新插件目录
 ```
 
 ## 文件结构

@@ -118,7 +118,7 @@ export function apply(ctx) {
         '管理用户的个人插件栈（持久化于 ~/.dsh/stack-curator/stack.json）。' +
         '支持：list（查看我的栈）、add（把插件加入栈，需 plugins 数组）、' +
         'remove（从栈移除）、install（一键安装栈上的插件，必须 confirm=true 才真正执行 ' +
-        'dsh plugin add）、update_catalog（更新插件目录：优先拉取 awesome-dsh-plugin 官方' +
+        'dsh plugin add）、update_catalog（更新插件目录：优先拉取 awesome-dsh-plugin 社区' +
         '注册表 /plugins.json，失败回退 raw README，结果缓存到 ~/.dsh/stack-curator/catalog.json）。' +
         '形成高度个性化的本地插件库。',
       parameters: {

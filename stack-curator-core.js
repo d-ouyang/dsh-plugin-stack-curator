@@ -15,7 +15,7 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 // 真相源 = 各语言 README 的 bullet 条目；维护者跑 probe 脚本抓取 npm/stars/readme
 // 富集后，build-site.mjs 生成「公开注册表 API」/plugins.json（注释明说
 // "Public registry API: /plugins.json — deterministic; consumed by the find plugin"）。
-// 因此本项目优先消费该官方注册表，README 解析仅作离线兜底。
+// 因此本项目优先消费该社区注册表（awesome-dsh-plugin 维护），README 解析仅作离线兜底。
 export const REGISTRY_URL = 'https://awesome-dsh-plugin.com/plugins.json'
 export const README_RAW_URL =
   'https://raw.githubusercontent.com/awesome-dsh-plugin/awesome-dsh-plugin/main/README.md'
@@ -93,7 +93,7 @@ export function parseReadme(md) {
   return plugins
 }
 
-/** 把 awesome 官方注册表文档归一化为本项目插件结构 */
+/** 把 awesome-dsh-plugin 社区注册表文档归一化为本项目插件结构 */
 export function normalizeRegistry(doc) {
   const arr = Array.isArray(doc) ? doc : doc.plugins || []
   const out = []
@@ -124,7 +124,7 @@ export function normalizeRegistry(doc) {
   return out
 }
 
-/** 拉取并归一化官方注册表。失败抛错，由上层回退到 README */
+/** 拉取并归一化社区注册表。失败抛错，由上层回退到 README */
 export async function fetchRegistry(timeoutMs = 30000) {
   const ac = new AbortController()
   const t = setTimeout(() => ac.abort(), timeoutMs)
@@ -144,7 +144,7 @@ export async function fetchRegistry(timeoutMs = 30000) {
 }
 
 /**
- * 更新插件目录：优先官方注册表 API，失败回退 raw README。
+ * 更新插件目录：优先社区注册表 API，失败回退 raw README。
  * 结果写入 CATALOG_CACHE（~/.dsh/stack-curator/catalog.json）。
  * @returns {{source:string,count:number,path:string,updated:string}}
  */
@@ -152,7 +152,7 @@ export async function updateCatalog({ onStatus } = {}) {
   let plugins
   let source
   try {
-    if (onStatus) onStatus('正在从官方注册表拉取 ' + REGISTRY_URL)
+    if (onStatus) onStatus('正在从社区注册表拉取 ' + REGISTRY_URL)
     plugins = await fetchRegistry()
     source = 'registry' // awesome-dsh-plugin.com/plugins.json
   } catch (e) {

@@ -2,7 +2,7 @@
 
 一个帮你「从 595 个 dsh 插件里挑出最适合你的那几个」的策展插件：按职业角色或自然语言描述推荐，并把选中的插件沉淀成你自己的本地插件栈。
 
-数据来源：[awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) 的**官方公开注册表** `https://awesome-dsh-plugin.com/plugins.json`（共 595 个插件 / 12 个分类）。该注册表由 awesome 项目自己的 `build-site.mjs` 基于 README（真相源）生成、并经 probe 脚本富集（npm 名、GitHub star 等）。插件内已内置一份快照作为离线兜底；可随时用 `update_catalog` 拉取最新。
+数据来源：[awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) 的**社区公开注册表** `https://awesome-dsh-plugin.com/plugins.json`（共 595 个插件 / 12 个分类）。该注册表由 awesome 项目自己的 `build-site.mjs` 基于 README（真相源）生成、并经 probe 脚本富集（npm 名、GitHub star 等）。插件内已内置一份快照作为离线兜底；可随时用 `update_catalog` 拉取最新。
 
 ---
 
@@ -27,7 +27,7 @@ dsh plugin --profile web add github:d-ouyang/dsh-plugin-stack-curator
 - `recommend_stack` — 推荐插件（按角色 / 描述）。支持三个可选参数：`maxResults`（返回数量上限，默认 8）、`minStars`（最低 star 数筛选）、**不给任何角色/描述时即进入「浏览全量池子」模式**（按 star 数降序列出整个插件池）。
 - `manage_stack` — 管理「我的插件栈」（`~/.dsh/stack-curator/stack.json`）；`update_catalog` 则负责刷新插件目录（缓存到 `~/.dsh/stack-curator/catalog.json`）
 
-> 插件池数据完全支持筛选：官方注册表里每个插件都带 `stars` 字段，所以 `minStars` 和「按 star 降序浏览」都是真实可用的。
+> 插件池数据完全支持筛选：社区注册表里每个插件都带 `stars` 字段，所以 `minStars` 和「按 star 降序浏览」都是真实可用的。
 
 ---
 
@@ -53,7 +53,7 @@ dsh plugin --profile web add github:d-ouyang/dsh-plugin-stack-curator
 > 把我栈里的插件一键安装到 web profile（确认后执行）。
 
 **G. 更新插件目录**
-> 更新一下插件目录。（→ 调用 `manage_stack({action:"update_catalog"})`，从 awesome 官方注册表拉取最新列表，缓存到 `~/.dsh/stack-curator/catalog.json`）
+> 更新一下插件目录。（→ 调用 `manage_stack({action:"update_catalog"})`，从 awesome 社区注册表拉取最新列表，缓存到 `~/.dsh/stack-curator/catalog.json`）
 
 **H. 浏览整个插件池（不限定角色/描述）**
 > 把 awesome 里的插件全列出来看看。（→ 不给 role/description，自动进入全量浏览，按 star 降序）
@@ -143,7 +143,7 @@ dsh plugin --profile web add github:d-ouyang/dsh-plugin-stack-curator
 node test.mjs              # 单元测试（11 个用例）
 node examples/run.mjs      # 跑内置 4 个示例场景
 node examples/run.mjs "我要画流程图和架构图"   # 自定义一句描述试推荐
-node scripts/refresh-catalog.mjs   # 从官方注册表刷新插件目录
+node scripts/refresh-catalog.mjs   # 从社区注册表刷新插件目录
 ```
 
-> 说明：awesome 列表的插件描述虽为英文，但官方注册表同时提供了中文 `description.zh` 字段，本插件优先展示中文；再用内置「中文意图词 → 英文关键词」同义词表（`SYNONYMS`）做跨语言匹配，让中文描述也能命中。若某次推荐不准，可在描述里补充更具体的英文关键词，或直接用 `role` 走预设基线。
+> 说明：awesome 列表的插件描述虽为英文，但社区注册表同时提供了中文 `description.zh` 字段，本插件优先展示中文；再用内置「中文意图词 → 英文关键词」同义词表（`SYNONYMS`）做跨语言匹配，让中文描述也能命中。若某次推荐不准，可在描述里补充更具体的英文关键词，或直接用 `role` 走预设基线。
