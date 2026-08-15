@@ -135,9 +135,13 @@
 ## 6. 注册命令与本地开发
 
 ```bash
-# 注册到 web profile
-dsh plugin --profile web add /abs/path/to/dsh-plugin-stack-curator
+# 注册到 web profile（其他人请直接用 GitHub 安装，零构建、无需 allowBuilds）
+dsh plugin --profile web add github:d-ouyang/dsh-plugin-stack-curator
 # 重启 3080 后，在 http://127.0.0.1:3080/ 直接说话即可触发
+
+# 本地开发时也可装本地目录：
+# git clone https://github.com/d-ouyang/dsh-plugin-stack-curator.git
+# dsh plugin --profile web add ./dsh-plugin-stack-curator
 
 # 本地校验
 node --check index.js

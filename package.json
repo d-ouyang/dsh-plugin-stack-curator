@@ -4,11 +4,17 @@
   "type": "module",
   "private": true,
   "description": "为 DeepSeek Harness 用户按角色/需求推荐插件，并管理个人插件栈。",
-  "exports": {
-    ".": "./index.js"
-  },
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "stack-curator-core.js",
+    "cordis.patch.yml",
+    "data"
+  ],
   "dsh": {
-    "bundle": true
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
   },
   "peerDependencies": {
     "@deepseek-ai/dsh-tools": "*"

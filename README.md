@@ -9,8 +9,14 @@ Data source: the [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awes
 ## Install
 
 ```bash
-dsh plugin --profile web add /abs/path/to/dsh-plugin-stack-curator
+# Option A (recommended): install straight from GitHub.
+# Zero-build pure ESM — no build step, so no `allowBuilds` prompt is needed.
+dsh plugin --profile web add github:d-ouyang/dsh-plugin-stack-curator
 # restart the web service, then talk to it at http://127.0.0.1:3080/
+
+# Option B: clone first, then install the local checkout
+# git clone https://github.com/d-ouyang/dsh-plugin-stack-curator.git
+# dsh plugin --profile web add ./dsh-plugin-stack-curator
 ```
 
 The harness auto-routes to the two tools below by intent — no tool name needed.

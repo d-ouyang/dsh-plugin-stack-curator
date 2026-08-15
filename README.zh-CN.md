@@ -9,8 +9,14 @@
 ## 一键安装
 
 ```bash
-dsh plugin --profile web add /abs/path/to/dsh-plugin-stack-curator
+# 方式一（推荐）：直接从 GitHub 安装。
+# 零构建、纯 ESM，无需构建步骤，因此不会出现 allowBuilds 授权提示。
+dsh plugin --profile web add github:d-ouyang/dsh-plugin-stack-curator
 # 重启 web 服务后，在 http://127.0.0.1:3080/ 直接对话即可触发
+
+# 方式二：先克隆再装本地目录
+# git clone https://github.com/d-ouyang/dsh-plugin-stack-curator.git
+# dsh plugin --profile web add ./dsh-plugin-stack-curator
 ```
 
 harness 会按意图自动路由到下方两个工具，无需手动指定工具名。

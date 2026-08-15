@@ -10,7 +10,11 @@
 
 ```bash
 # 注册到 web profile（http://127.0.0.1:3080/ 背后）
-dsh plugin --profile web add /abs/path/to/dsh-plugin-stack-curator
+# 方式一（推荐）：直接从 GitHub 安装，零构建、无需 allowBuilds 授权
+dsh plugin --profile web add github:d-ouyang/dsh-plugin-stack-curator
+# 方式二：先 git clone 再装本地目录
+# git clone https://github.com/d-ouyang/dsh-plugin-stack-curator.git
+# dsh plugin --profile web add ./dsh-plugin-stack-curator
 # 重启 web 服务后生效
 ```
 
